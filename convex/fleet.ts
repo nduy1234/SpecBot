@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { BATTERY_PER_CELL, HOME_BAYS, executeJob, type PathPt, type PlanStep } from "./lib/warehouse";
 import { FALLBACK_PROFILE, stepMsFor, type Profile } from "./lib/profile";
 import type { Plan } from "./lib/plan";
+import { DEFAULTS, checkAdminKey, envNumber, hitWindow } from "./lib/limits";
 
 const START_BATTERY = [92, 78, 64, 31];
 
@@ -17,6 +18,19 @@ export function maskSender(source: string, sender: string) {
   const digits = sender.replace(/\D/g, "");
   if (source === "imessage") return `•••• ${digits.slice(-4) || sender.slice(-4)}`;
   return `web·${sender.slice(-4)}`;
+}
+
+async function hitRate(ctx: MutationCtx, key: string, windowMs: number, max: number) {
+  const row = await ctx.db.query("rateWindows").withIndex("by_key", (q) => q.eq("key", key)).first();
+  const { allowed, next } = hitWindow(row, Date.now(), windowMs, max);
+  if (row) await ctx.db.patch(row._id, next);
+  else await ctx.db.insert("rateWindows", { key, ...next });
+  return allowed;
+}
+
+export async function getSpent(ctx: QueryCtx) {
+  const b = await ctx.db.query("budget").withIndex("by_key", (q) => q.eq("key", "global")).first();
+  return b?.spentUsd ?? 0;
 }
 
 async function seed(ctx: MutationCtx) {
@@ -81,6 +95,7 @@ export const routerContext = internalQuery({
       skills: skills.map((s) => ({ name: s.name, template: s.template })),
       skill,
       baselineSamples: baseline?.samples ?? [],
+      spentUsd: await getSpent(ctx),
     };
   },
 });
@@ -90,13 +105,27 @@ export const touchContact = internalMutation({
   handler: async (ctx, { sender, source, exempt }) => {
     const now = Date.now();
     const c = await ctx.db.query("contacts").withIndex("by_sender", (q) => q.eq("sender", sender)).first();
+    if (!exempt && c && now - c.lastCommandAt < 5000) return { isNew: false, limited: "sender" as const };
+    // web session ids are client-chosen, so also cap all web traffic together
+    if (!exempt && source === "web" && !(await hitRate(ctx, "web", 60_000, envNumber(process.env.WEB_COMMANDS_PER_MIN, DEFAULTS.webPerMin))))
+      return { isNew: !c, limited: "global" as const };
     if (!c) {
       await ctx.db.insert("contacts", { sender, source, lastCommandAt: now, count: 1 });
-      return { isNew: true, limited: false };
+      return { isNew: true, limited: null };
     }
-    if (!exempt && now - c.lastCommandAt < 5000) return { isNew: false, limited: true };
     await ctx.db.patch(c._id, { lastCommandAt: now, count: c.count + 1 });
-    return { isNew: false, limited: false };
+    return { isNew: false, limited: null };
+  },
+});
+
+// Presenter-only: checks ADMIN_KEY and allows one Auto-run batch per cooldown window.
+export const claimAutoRun = internalMutation({
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (!checkAdminKey(process.env.ADMIN_KEY, adminKey)) return { ok: false as const, error: "bad admin key" };
+    if (!(await hitRate(ctx, "autorun", DEFAULTS.autoRunCooldownMs, 1)))
+      return { ok: false as const, error: "Auto-run is already running; try again in ~90s" };
+    return { ok: true as const };
   },
 });
 
@@ -167,6 +196,11 @@ export const logTask = internalMutation({
     createdAt: v.number(),
   },
   handler: async (ctx, a) => {
+    if (a.costUsd > 0) {
+      const b = await ctx.db.query("budget").withIndex("by_key", (q) => q.eq("key", "global")).first();
+      if (b) await ctx.db.patch(b._id, { spentUsd: b.spentUsd + a.costUsd });
+      else await ctx.db.insert("budget", { key: "global", spentUsd: a.costUsd });
+    }
     return await ctx.db.insert("tasks", {
       ...a,
       senderMasked: maskSender(a.source, a.sender),
@@ -289,8 +323,8 @@ export const completeJob = internalMutation({
 export const reset = mutation({
   args: { adminKey: v.string() },
   handler: async (ctx, { adminKey }) => {
-    if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) throw new Error("bad admin key");
-    for (const t of ["robots", "skills", "tasks", "metrics", "outbox", "contacts"] as const) {
+    if (!checkAdminKey(process.env.ADMIN_KEY, adminKey)) throw new Error("bad admin key");
+    for (const t of ["robots", "skills", "tasks", "metrics", "outbox", "contacts", "rateWindows", "budget"] as const) {
       for (const d of await ctx.db.query(t).collect()) await ctx.db.delete(d._id);
     }
     await seed(ctx);

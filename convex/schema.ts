@@ -78,4 +78,10 @@ export default defineSchema({
   }).index("by_sender", ["sender", "createdAt"]),
 
   inbound: defineTable({ messageId: v.string() }).index("by_messageId", ["messageId"]),
+
+  // fixed-window rate limits shared by all callers ("web", "autorun")
+  rateWindows: defineTable({ key: v.string(), windowStart: v.number(), count: v.number() }).index("by_key", ["key"]),
+
+  // running total of LLM spend, checked before paid tiers
+  budget: defineTable({ key: v.string(), spentUsd: v.number() }).index("by_key", ["key"]),
 });

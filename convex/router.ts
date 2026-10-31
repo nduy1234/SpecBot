@@ -7,6 +7,7 @@ import { MODELS, costOf, BASELINE_SAMPLES, type ModelTier } from "./lib/pricing"
 import { PlanSchema, fromTemplate, normalize, parseFree, toTemplate, validatePlan, type Plan } from "./lib/plan";
 import { HOME_BAYS, LOCATIONS, positionAt, type PathPt } from "./lib/warehouse";
 import type { Profile } from "./lib/profile";
+import { DEFAULTS, envNumber, overBudget } from "./lib/limits";
 
 type Source = "imessage" | "web";
 type Spend = { input: number; output: number; cacheRead: number; cacheWrite: number; cost: number; models: string[] };
@@ -135,8 +136,12 @@ export async function handleCommandImpl(ctx: ActionCtx, source: Source, sender: 
     if (!text) return;
     const contact = await ctx.runMutation(internal.fleet.touchContact, { sender, source, exempt });
     if (contact.isNew && source === "imessage") await say(`👋 Welcome to SpecBot! You're commanding a live robot fleet.\n\n${HELP}`);
-    if (contact.limited) {
+    if (contact.limited === "sender") {
       await say("⏳ Easy there — one command every 5 seconds per number.");
+      return;
+    }
+    if (contact.limited === "global") {
+      await say("⏳ The web demo is busy right now — please try again in a minute.");
       return;
     }
 
@@ -190,6 +195,13 @@ export async function handleCommandImpl(ctx: ActionCtx, source: Source, sender: 
           await ctx.runMutation(internal.fleet.hitSkill, { signature: norm.signature });
         } else reason = `cached skill failed validation: ${validation.reason}`;
       }
+    }
+
+    // ---- Budget gate: paid tiers stop once the demo budget is spent -----
+    if (!plan && overBudget(ctxData.spentUsd, envNumber(process.env.LLM_BUDGET_USD, DEFAULTS.budgetUsd))) {
+      await say("💸 The demo's AI budget is used up. Status, help and already-learned skills still work.");
+      await log({ tier: "BLOCKED", outcome: "blocked", reason: `LLM budget reached ($${ctxData.spentUsd.toFixed(2)} spent)` });
+      return;
     }
 
     // ---- Tier 2: CHEAP -------------------------------------------------
@@ -328,10 +340,13 @@ const AUTO_COMMANDS = [
   "move pallet from Dock C to Rack 2",
 ];
 
+// Presenter-only (requires ADMIN_KEY); bypasses web rate limits but not the LLM budget.
 export const autoRun = action({
-  args: { sessionId: v.string() },
-  handler: async (ctx, { sessionId }) => {
+  args: { sessionId: v.string(), adminKey: v.string() },
+  handler: async (ctx, { sessionId, adminKey }) => {
     if (!/^web-[a-z0-9]{4,32}$/.test(sessionId)) throw new Error("bad session");
+    const claim = await ctx.runMutation(internal.fleet.claimAutoRun, { adminKey });
+    if (!claim.ok) throw new Error(claim.error);
     for (let i = 0; i < AUTO_COMMANDS.length; i++) {
       await ctx.scheduler.runAfter(i * 3000, internal.router.handleCommand, {
         source: "web",

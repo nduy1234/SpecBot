@@ -61,13 +61,14 @@ function Banner() {
   );
 }
 
-function Chat({ sid }: { sid: string }) {
+function Chat({ sid, adminKey }: { sid: string; adminKey: string | null }) {
   const send = useAction(api.router.sendWeb);
   const auto = useAction(api.router.autoRun);
   const replies = useQuery(api.dashboard.myReplies, { sessionId: sid }) ?? [];
   const cmds = useQuery(api.dashboard.myCommands, { sessionId: sid }) ?? [];
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ text: string; createdAt: number }[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const items = useMemo(() => {
@@ -88,8 +89,11 @@ function Chat({ sid }: { sid: string }) {
     setText("");
     setBusy(true);
     setPending((p) => [...p, { text: t, createdAt: Date.now() }]);
+    setError(null);
     try {
       await send({ sessionId: sid, text: t });
+    } catch {
+      setError("Couldn't reach the fleet. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -98,9 +102,17 @@ function Chat({ sid }: { sid: string }) {
     <div className="flex flex-col rounded-xl border border-white/10 bg-white/[0.03]">
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
         <div className="text-sm font-semibold">💻 Web chat (same brain as iMessage)</div>
-        <button onClick={() => auto({ sessionId: sid })} className="rounded-md bg-purple-600 px-2.5 py-1 text-xs font-semibold hover:bg-purple-500">
-          ▶ Auto-run 20 tasks
-        </button>
+        {adminKey && (
+          <button
+            onClick={() => {
+              setError(null);
+              auto({ sessionId: sid, adminKey }).catch((e: Error) => setError(`Auto-run: ${e.message.replace(/^.*Uncaught Error: /s, "").split("\n")[0]}`));
+            }}
+            className="rounded-md bg-purple-600 px-2.5 py-1 text-xs font-semibold hover:bg-purple-500"
+          >
+            ▶ Auto-run 20 tasks
+          </button>
+        )}
       </div>
       <div ref={box} className="h-48 space-y-1.5 overflow-y-auto p-3 text-sm">
         {items.length === 0 && <div className="text-gray-500">Type a command, e.g. “move pallet from Dock A to Rack 3”.</div>}
@@ -110,6 +122,7 @@ function Chat({ sid }: { sid: string }) {
           </div>
         ))}
       </div>
+      {error && <div className="border-t border-white/10 px-3 py-1.5 text-xs text-amber-300">{error}</div>}
       <form onSubmit={submit} className="flex gap-2 border-t border-white/10 p-2">
         <input
           value={text}
@@ -206,7 +219,7 @@ export default function App() {
             </ResponsiveContainer>
           </div>
 
-          <Chat sid={sid} />
+          <Chat sid={sid} adminKey={adminKey} />
 
           <div className="rounded-xl border border-white/10 bg-white/[0.03]">
             <div className="border-b border-white/10 px-3 py-2 text-sm font-semibold">Live feed</div>
