@@ -127,6 +127,7 @@ export function Banner() {
 
 export function Counters() {
   const s = useQuery(api.tasks.stats);
+  const skills = useQuery(api.tasks.skills);
   if (!s) return <div className="h-24 shrink-0" />;
   const box = (label: string, value: string, sub?: string, accent = "text-white") => (
     <div className="rounded-lg bg-slate-800/80 p-2">
@@ -145,7 +146,7 @@ export function Counters() {
         {box("Robot tasks", String(s.tasks), `${s.freeCommands} free cmds`)}
         {box("Saved vs baseline", s.pctSaved != null ? `${s.pctSaved.toFixed(0)}%` : "…", s.baselineMeasured ? "baseline measured" : `measuring ${s.baselineSamples}/3`, "text-emerald-400")}
         {box("Spent / baseline", usd(s.spent, 3), `vs ${usd(s.baselineTotal, 3)}`)}
-        {box("Cache hit rate", `${s.cacheHitRate.toFixed(0)}%`, `${s.latency.CACHE.count} hits`, "text-emerald-300")}
+        {box("Cache hit rate", `${s.cacheHitRate.toFixed(0)}%`, `${s.latency.CACHE.count} hits · ${skills?.length ?? 0} skills learned`, "text-emerald-300")}
       </div>
       {s.baselineMeasured && s.perTaskBaseline != null && s.tasks > 0 && <ScaleProjection perTaskBaseline={s.perTaskBaseline} perTaskActual={s.spent / s.tasks} />}
       <div className="flex flex-wrap gap-3 text-[11px] text-slate-300">

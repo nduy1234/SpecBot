@@ -2,7 +2,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef } from "react";
 import { api } from "../convex/_generated/api";
 import { Warehouse } from "./sim/Warehouse";
-import { Banner, Chat, CostChart, Counters, Feed, JoinPage, Skills } from "./dashboard/Dashboard";
+import { Banner, Chat, CostChart, Counters, Feed, JoinPage } from "./dashboard/Dashboard";
 
 export default function App() {
   if (new URLSearchParams(location.search).has("join")) return <JoinPage />;
@@ -68,10 +68,6 @@ function Main() {
             </div>
           </section>
         </div>
-        <section className="shrink-0 rounded-lg border border-slate-800 p-2">
-          <h2 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">Skill library</h2>
-          <Skills />
-        </section>
       </div>
     </div>
   );
