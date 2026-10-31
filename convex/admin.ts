@@ -21,3 +21,26 @@ export const setProfile = internalMutation({
     else await ctx.db.insert("profile", { ...a, updatedAt: Date.now() });
   },
 });
+
+export const dropSkill = internalMutation({
+  args: { key: v.string() },
+  handler: async (ctx, { key }) => {
+    const s = await ctx.db.query("skills").withIndex("by_key", (q) => q.eq("key", key)).first();
+    if (s) await ctx.db.delete(s._id);
+    return !!s;
+  },
+});
+
+export const blockQueuedMatching = internalMutation({
+  args: { text: v.string(), reason: v.string() },
+  handler: async (ctx, { text, reason }) => {
+    const rows = await ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "queued")).collect();
+    let n = 0;
+    for (const t of rows)
+      if (t.text === text) {
+        await ctx.db.patch(t._id, { status: "blocked", tier: "BLOCKED", reasons: [...t.reasons, reason] });
+        n++;
+      }
+    return n;
+  },
+});

@@ -47,7 +47,10 @@ const PH = (k: string) => `{{${k}}}`;
 /** Replace literal param values in a plan with placeholders. Returns null if not generalizable. */
 export function parameterize(plan: Plan, intent: Intent): Template | null {
   const p = intent.params;
+  // Multi-robot plans (e.g. a heavy load split across robots) depend on the exact numbers: never cache them.
+  if (plan.assignments.length !== 1) return null;
   let hits = 0;
+  let kgHit = false;
   const t: Template = JSON.parse(JSON.stringify(plan));
   t.blocked_reason = null;
   for (const a of t.assignments) {
@@ -56,11 +59,13 @@ export function parameterize(plan: Plan, intent: Intent): Template | null {
       if (s.target && s.target === p.from) (s.target = PH("from")), hits++;
       else if (s.target && s.target === p.to) (s.target = PH("to")), hits++;
       if (s.item && p.item && s.item.toLowerCase() === String(p.item).toLowerCase()) s.item = PH("item");
-      if (s.weight_kg != null && p.kg != null && s.weight_kg === p.kg) (s as { weight_kg: unknown }).weight_kg = PH("kg");
+      if (s.weight_kg != null && p.kg != null && s.weight_kg === p.kg) ((s as { weight_kg: unknown }).weight_kg = PH("kg")), (kgHit = true);
     }
   }
   const needed = ["from", "to"].filter((k) => p[k] != null).length;
   if (hits < needed) return null;
+  // If the operator gave a weight, the template must carry it, so the validator re-checks every new weight.
+  if (p.kg != null && !kgHit) return null;
   return t;
 }
 

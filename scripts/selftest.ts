@@ -22,3 +22,9 @@ console.log(JSON.stringify(filled.assignments[0].steps));
 console.log(validatePlan(filled, FALLBACK_PROFILE, [1, 2, 3, 4].map((num) => ({ num, battery: 90 }))));
 const heavy = fillTemplate(tpl, normalize("move 300 kg steel from Dock A to Rack 5")!);
 console.log(JSON.stringify(heavy.assignments[0].steps[1]), validatePlan(heavy, FALLBACK_PROFILE, [{ num: 1, battery: 90 }]));
+// multi-robot split plans must never become skills
+const split = { assignments: [1, 2, 3].map(() => ({ robot: null, steps: [{ action: "move_to", target: "Dock A" }, { action: "pick", item: "steel", weight_kg: 100 }, { action: "move_to", target: "Rack 5" }, { action: "drop" }] })), confidence: 0.9, summary: "", risky: true, blocked_reason: null } as any;
+console.log("split cached?", parameterize(split, normalize("bring 300 kg of steel from Dock A to Rack 5")!) !== null);
+const kgT = parameterize({ assignments: [{ robot: null, steps: [{ action: "move_to", target: "Dock A" }, { action: "pick", item: "boxes", weight_kg: 40 }, { action: "move_to", target: "Rack 2" }, { action: "drop" }] }], confidence: 0.9, summary: "", risky: false, blocked_reason: null } as any, normalize("move 40 kg boxes from Dock A to Rack 2")!)!;
+const big = fillTemplate(kgT, normalize("move a 500 kg engine from Dock A to Rack 2")!);
+console.log("500kg via kg-skill:", JSON.stringify(validatePlan(big, FALLBACK_PROFILE, [{ num: 1, battery: 90 }])));
