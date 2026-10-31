@@ -147,6 +147,7 @@ export function Counters() {
         {box("Spent / baseline", usd(s.spent, 3), `vs ${usd(s.baselineTotal, 3)}`)}
         {box("Cache hit rate", `${s.cacheHitRate.toFixed(0)}%`, `${s.latency.CACHE.count} hits`, "text-emerald-300")}
       </div>
+      {s.baselineMeasured && s.perTaskBaseline != null && s.tasks > 0 && <ScaleProjection perTaskBaseline={s.perTaskBaseline} perTaskActual={s.spent / s.tasks} />}
       <div className="flex flex-wrap gap-3 text-[11px] text-slate-300">
         <span>Avg latency:</span>
         {(["FREE", "CACHE", "CHEAP", "FRONTIER"] as const).map((t) => (
@@ -155,6 +156,30 @@ export function Counters() {
           </span>
         ))}
         <span className="text-slate-500">· baseline/task {usd(s.perTaskBaseline)} ({s.baselineMeasured ? "measured" : "measuring"})</span>
+      </div>
+    </div>
+  );
+}
+
+const COMMANDS_PER_DAY = 10_000;
+const big = (x: number) => (x >= 1000 ? `$${Math.round(x).toLocaleString("en-US")}` : `$${x.toFixed(x < 10 ? 2 : 0)}`);
+
+/** Scales the measured per-task averages up to fleet volume so the gap is visible. */
+function ScaleProjection({ perTaskBaseline, perTaskActual }: { perTaskBaseline: number; perTaskActual: number }) {
+  const opusDay = perTaskBaseline * COMMANDS_PER_DAY;
+  const oursDay = perTaskActual * COMMANDS_PER_DAY;
+  const savedYear = (opusDay - oursDay) * 365;
+  return (
+    <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/40 p-2">
+      <div className="text-[10px] uppercase tracking-wider text-emerald-300">At fleet scale: {COMMANDS_PER_DAY.toLocaleString("en-US")} commands / day</div>
+      <div className="flex flex-wrap items-baseline gap-x-3 text-white">
+        <span className="text-lg text-purple-300 line-through decoration-2">{big(opusDay)}/day all-Opus</span>
+        <span className="text-slate-400">→</span>
+        <span className="text-2xl font-black text-emerald-400">{big(oursDay)}/day SpecBot</span>
+        <span className="ml-auto text-lg font-black text-yellow-300">{big(savedYear)}/yr saved</span>
+      </div>
+      <div className="text-[10px] text-slate-400">
+        Projected from tonight's measured averages: {usd(perTaskBaseline)} vs {usd(perTaskActual)} per command (real API token costs).
       </div>
     </div>
   );
