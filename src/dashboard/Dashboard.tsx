@@ -140,7 +140,7 @@ export function Counters() {
     return l?.avgMs != null ? `${(l.avgMs / 1000).toFixed(1)}s` : "—";
   };
   return (
-    <div className="shrink-0 space-y-2">
+    <div className="sticky top-0 z-20 shrink-0 space-y-2 bg-slate-950 pb-2 shadow-lg shadow-slate-950">
       <div className="grid grid-cols-4 gap-2">
         {box("Robot tasks", String(s.tasks), `${s.freeCommands} free cmds`)}
         {box("Saved vs baseline", s.pctSaved != null ? `${s.pctSaved.toFixed(0)}%` : "…", s.baselineMeasured ? "baseline measured" : `measuring ${s.baselineSamples}/3`, "text-emerald-400")}
