@@ -1,32 +1,15 @@
-# React + TypeScript + Vite
+# SpecBot
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**SpecBot Text — "Text a robot fleet. Pay 90% less for its brain."**
 
-Currently, two official plugins are available:
+Text an iMessage number (via Photon Spectrum) a command like `move pallet from Dock A to Rack 3`.
+A robot executes it live in a browser 3D warehouse sim, and SpecBot texts back the result plus what
+the task cost versus an all-frontier baseline.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Stack: Vite + React + TypeScript, react-three-fiber, Tailwind, Recharts · Convex (DB, realtime, scheduler,
+HTTP actions) · Anthropic (Haiku 5.5 cheap tier, Opus 5.5 frontier) · Photon Spectrum (iMessage) · Firecrawl.
 
-## React Compiler
+Cost-aware router tiers: FREE (deterministic) → CACHE (learned skills, $0) → CHEAP (Haiku) →
+FRONTIER (Opus, plans saved as skills) → BLOCKED (deterministic safety validator).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+See `.env.example` for configuration. Full README (architecture diagram, cost methodology) coming with the deploy milestone.
