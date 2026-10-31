@@ -2,9 +2,14 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef } from "react";
 import { api } from "../convex/_generated/api";
 import { Warehouse } from "./sim/Warehouse";
-import { Banner, Chat, CostChart, Counters, Feed, Skills } from "./dashboard/Dashboard";
+import { Banner, Chat, CostChart, Counters, Feed, JoinPage, Skills } from "./dashboard/Dashboard";
 
 export default function App() {
+  if (new URLSearchParams(location.search).has("join")) return <JoinPage />;
+  return <Main />;
+}
+
+function Main() {
   const robots = useQuery(api.sim.robots);
   const profile = useQuery(api.tasks.profile);
   const seed = useMutation(api.sim.seed);

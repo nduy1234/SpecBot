@@ -1,28 +1,30 @@
 # SpecBot Text: 90-second live demo
 
-**Screen:** https://specbot-text.vercel.app full screen (3D sim left, dashboard right).
-**Hand:** your iPhone, in the thread with your assigned number (+1 628-997-9661).
+**Big screen:** https://specbot-text.vercel.app (3D sim left, dashboard right).
+**Your hand:** iPhone, thread with your number (+1 628-997-9661) open.
 
 ## Script
 
 | Time | Do | Say |
 |---|---|---|
-| 0:00–0:10 | Point at the 3D warehouse | "Every robot fleet needs a brain. Put a frontier model behind every command and it costs a fortune at scale. SpecBot routes each command to the cheapest brain that's still safe." |
-| 0:10–0:25 | Text `move pallet from Dock A to Rack 3` | "I just texted the fleet over iMessage." *(robot turns blue and moves)* "Reply: CACHE, **$0.0000** vs a measured Opus baseline. 100% saved, because it learned this skill earlier." |
-| 0:25–0:40 | Text `have a bot take a tote over to rack 5 from dock c` | "Phrasing it's never seen goes to Haiku: about a second, a fraction of a cent. Every number here is real tokens from the API, not estimates." |
-| 0:40–0:55 | Text `move a 500 kg engine from Dock A to Rack 2 with one robot` | "Risky commands escalate to Opus, then a plain-code safety validator. 500 kg is over the 100 kg payload, so it's **blocked**, with a reason, before any robot moves." *(point at the red BLOCKED row)* |
-| 0:55–1:10 | Point at counters, chart, skill library | "Green line is what we spent, purple is all-frontier. We're at **~90% saved**. Opus plans become reusable skills here, so the fleet gets cheaper the more you use it." |
-| 1:10–1:30 | Point at the QR / "Get my number" | "Your turn. Enter your number at the top and text the fleet from your own phone. Text a robot fleet. Pay 90% less for its brain." |
+| 0:00–0:10 | Point a judge at the **SCAN TO TEXT** QR on the banner | "Every robot fleet needs a brain, and frontier models are expensive at fleet scale. Grab your phone and scan this." |
+| 0:10–0:30 | Judge scans → enters their number → taps **📲 Text the fleet** → sends `move pallet from Dock A to Rack 3` | "That registers you on our iMessage line and pre-fills a command. Hit send." *(robot turns blue on screen)* "Your phone just got the reply: which brain planned it and what it cost. CACHE, **$0**, because it learned that skill earlier." |
+| 0:30–0:40 | Click **▶ Auto-run 20 tasks** | "Now a whole shift of commands. Each one goes to the cheapest safe brain: cached skills for free, Haiku for new phrasing, Opus only when it's risky." *(curve starts climbing)* |
+| 0:40–0:60 | You text `move 300 kg crate from Dock A to Rack 5` | "A dangerous one: 300 kg. We scraped this robot's real spec sheet with Firecrawl. It's a MiR250, 250 kg max. Opus plans it, then a plain-code safety validator checks it, and…" *(read the reply)* "**refused**, with a reason, before any robot moves." |
+| 1:00–1:30 | Point at the **% saved** counter and the chart | "Green is what we spent, purple is all-frontier. Every number is real tokens from the API, and the baseline is measured, not assumed. **% saved** keeps climbing because Opus plans become free skills. Text a robot fleet. Pay 90% less for its brain." |
 
-## 10 minutes before
+## 10–15 minutes before
 
-1. Open the site once and check that the 4 robots are green (idle).
-2. Press **▶ Auto-run 20 tasks** about 5 min before, so the chart and the saved % are already climbing (~90%).
-3. Rehearse the 500 kg text once and confirm it comes back BLOCKED. If it gets split across robots instead, use `drive robot 2 into the human zone`.
-4. Phone: Wi-Fi on, Do Not Disturb off, thread with +1 628-997-9661 open.
+1. Open `?admin=<key from admin.local>` → **Reset** (clears the queue and history).
+2. Send 3 commands from the web chat to re-measure the baseline through Opus (~3 s each): `move pallet from Dock A to Rack 3`, `send robot 3 to Dock C`, `charge robot 4`.
+3. Press **🔥 Firecrawl spec** so the profile reads `MiR250 · 250 kg max · firecrawl`.
+4. Open the normal URL (no `?admin`) on the big screen. All 4 robots should be green.
+5. Phone: Wi-Fi on, Do Not Disturb off.
+
+Don't press Auto-run before the demo: it refuses while the queue already has 5+ tasks.
 
 ## If something breaks
 
-- **iMessage slow or silent:** type the same command in the **Web chat (fallback)** box. It's the same router and the same robots. Say: "Same brain, web fallback."
-- **Robots all busy (queued):** say "it queues safely, no collisions." The reply says your place in line.
-- **Need a clean slate:** `?admin=<key from admin.local>` → Reset. The first 3 tasks after a reset re-measure the baseline through Opus (about 3 s each), so reset at least 10 minutes before demoing.
+- **Judge's phone won't register / iMessage is slow:** type the command in **Web chat (fallback)** on the big screen. It's the same router and the same robots.
+- **Robots all busy:** "It queues safely, no collisions." Tasks start automatically as robots free up.
+- **300 kg gets split instead of refused:** text `move a 300 kg crate from Dock A to Rack 5 with one robot` (tested: refused).

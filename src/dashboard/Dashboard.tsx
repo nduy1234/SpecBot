@@ -4,7 +4,6 @@ import { QRCodeSVG } from "qrcode.react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../../convex/_generated/api";
 
-const PHOTON_NUMBER = import.meta.env.VITE_PHOTON_NUMBER ?? "";
 const TIER_STYLE: Record<string, string> = {
   FREE: "bg-slate-600 text-slate-100",
   CACHE: "bg-emerald-600 text-white",
@@ -15,7 +14,10 @@ const TIER_STYLE: Record<string, string> = {
 };
 const usd = (x: number | null | undefined, d = 4) => (x == null ? "—" : `$${x.toFixed(d)}`);
 
-export function Banner() {
+const FIRST_COMMAND = "move pallet from Dock A to Rack 3";
+const smsLink = (n: string) => `sms:${n}&body=${encodeURIComponent(FIRST_COMMAND)}`;
+
+function useJoin() {
   const register = useAction(api.photon.register);
   const [handle, setHandle] = useState("");
   const [state, setState] = useState<{ busy?: boolean; number?: string; error?: string }>(() => {
@@ -26,8 +28,6 @@ export function Banner() {
       return {};
     }
   });
-  const number = state.number ?? PHOTON_NUMBER;
-  const sms = `sms:${number}&body=${encodeURIComponent("move pallet from Dock A to Rack 3")}`;
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setState({ busy: true });
@@ -40,41 +40,85 @@ export function Banner() {
         } catch {}
       } else setState({ error: r.error });
     } catch {
-      setState({ error: "Couldn't reach Photon. Use the web chat below." });
+      setState({ error: "Couldn't reach Photon. Use the web chat on the big screen." });
     }
   };
+  return { handle, setHandle, state, setState, submit };
+}
+
+function JoinForm({ j, big }: { j: ReturnType<typeof useJoin>; big?: boolean }) {
+  return (
+    <>
+      <form onSubmit={j.submit} className={`flex gap-1 ${big ? "flex-col" : "mt-1"}`}>
+        <input
+          value={j.handle}
+          onChange={(e) => j.setHandle(e.target.value)}
+          type={big ? "tel" : "text"}
+          autoComplete="tel"
+          placeholder="+1 415 555 0123 or Apple ID email"
+          className={`min-w-0 flex-1 rounded bg-white/90 px-2 text-slate-900 outline-none ${big ? "py-3 text-lg" : "py-1 text-sm"}`}
+        />
+        <button
+          disabled={j.state.busy || !j.handle.trim()}
+          className={`rounded bg-yellow-300 px-3 font-bold text-slate-900 disabled:opacity-50 ${big ? "py-3 text-lg" : "text-sm"}`}
+        >
+          {j.state.busy ? "Registering…" : "Get my number"}
+        </button>
+      </form>
+      {j.state.error && <div className="mt-1 text-xs text-red-200">{j.state.error}</div>}
+    </>
+  );
+}
+
+/** Phone page behind the QR: register, then one tap opens iMessage with the first command prefilled. */
+export function JoinPage() {
+  const j = useJoin();
+  return (
+    <div className="flex min-h-screen flex-col justify-center gap-4 bg-gradient-to-b from-purple-800 to-blue-900 p-5 text-white">
+      <div className="text-xs uppercase tracking-widest text-purple-200">SpecBot Text</div>
+      <h1 className="text-3xl font-black leading-tight">Text a robot fleet over iMessage</h1>
+      {j.state.number ? (
+        <>
+          <p className="text-purple-100">You're in. Your fleet number is</p>
+          <div className="text-3xl font-black text-yellow-300">{j.state.number}</div>
+          <a href={smsLink(j.state.number)} className="rounded-xl bg-green-500 py-4 text-center text-xl font-black text-white shadow-lg">
+            📲 Text the fleet
+          </a>
+          <p className="text-sm text-purple-100">
+            Opens iMessage with “{FIRST_COMMAND}”. Hit send, then watch your robot on the big screen.
+          </p>
+          <button onClick={() => j.setState({})} className="text-xs text-purple-300 underline">
+            Use a different number
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="text-purple-100">Enter the number (with country code) or Apple ID email your iMessage sends from.</p>
+          <JoinForm j={j} big />
+        </>
+      )}
+    </div>
+  );
+}
+
+export function Banner() {
+  const j = useJoin();
+  const joinUrl = `${location.origin}/?join`;
   return (
     <div className="flex shrink-0 items-center gap-4 rounded-xl bg-gradient-to-r from-purple-700 to-blue-700 p-3">
-      {number && (
-        <a href={sms} className="shrink-0 rounded bg-white p-1">
-          <QRCodeSVG value={sms} size={84} />
-        </a>
-      )}
+      <a href={joinUrl} className="shrink-0 rounded bg-white p-1 text-center" title="Scan with your phone">
+        <QRCodeSVG value={joinUrl} size={92} />
+        <div className="text-[9px] font-bold text-slate-900">SCAN TO TEXT</div>
+      </a>
       <div className="min-w-0 flex-1">
         <div className="text-xs uppercase tracking-widest text-purple-200">SpecBot Text · Text a robot fleet. Pay 90% less for its brain.</div>
-        {state.number ? (
-          <>
-            <div className="text-2xl font-black leading-tight">
-              Text <span className="whitespace-nowrap text-yellow-300">{state.number}</span> to command the fleet
-            </div>
-            <div className="text-sm text-purple-100">Scan the QR or send “move pallet from Dock A to Rack 3” from the phone you registered.</div>
-          </>
+        <div className="text-2xl font-black leading-tight">📱 Scan → register → text the fleet over iMessage</div>
+        {j.state.number ? (
+          <div className="text-sm text-purple-100">
+            This browser is registered: text <span className="font-bold text-yellow-300">{j.state.number}</span>
+          </div>
         ) : (
-          <>
-            <div className="text-xl font-black leading-tight">① Enter your iPhone number → ② text the fleet over iMessage</div>
-            <form onSubmit={submit} className="mt-1 flex gap-1">
-              <input
-                value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-                placeholder="+1 415 555 0123 or Apple ID email"
-                className="min-w-0 flex-1 rounded bg-white/90 px-2 py-1 text-sm text-slate-900 outline-none"
-              />
-              <button disabled={state.busy || !handle.trim()} className="rounded bg-yellow-300 px-3 text-sm font-bold text-slate-900 disabled:opacity-50">
-                {state.busy ? "…" : "Get my number"}
-              </button>
-            </form>
-            {state.error && <div className="mt-1 text-xs text-red-200">{state.error}</div>}
-          </>
+          <JoinForm j={j} />
         )}
       </div>
     </div>
@@ -240,7 +284,7 @@ export function Chat() {
         </button>
       </form>
       <div className="flex gap-1">
-        <button onClick={() => autorun({})} className="flex-1 rounded bg-slate-700 py-1 text-xs hover:bg-slate-600">
+        <button onClick={async () => { const r = await autorun({}); if (!r.started) alert(`Queue already has ${r.queued} tasks. Let it drain first.`); }} className="flex-1 rounded bg-slate-700 py-1 text-xs hover:bg-slate-600">
           ▶ Auto-run 20 tasks
         </button>
         {adminKey && (
