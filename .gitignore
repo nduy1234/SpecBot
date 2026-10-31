@@ -4,3 +4,7 @@ dist
 .env
 *.local
 .vercel
+demo/*.webm
+demo/*.aiff
+demo/*.m4a
+demo/*.mp4

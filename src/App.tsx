@@ -6,6 +6,7 @@ import { Banner, Chat, CostChart, Counters, Feed, JoinPage } from "./dashboard/D
 
 export default function App() {
   if (new URLSearchParams(location.search).has("join")) return <JoinPage />;
+  if (new URLSearchParams(location.search).has("record")) return <RecordView />;
   return <Main />;
 }
 
@@ -69,6 +70,22 @@ function Main() {
           </section>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Full-bleed 3D view used to capture demo footage. */
+function RecordView() {
+  const robots = useQuery(api.sim.robots);
+  const serverTime = useAction(api.sim.serverTime);
+  const offset = useRef(0);
+  useEffect(() => {
+    const t0 = Date.now();
+    serverTime({}).then((s) => (offset.current = s - (t0 + Date.now()) / 2));
+  }, [serverTime]);
+  return (
+    <div style={{ width: 1280, height: 800 }} className="bg-black">
+      <Warehouse robots={robots ?? []} offset={() => offset.current} />
     </div>
   );
 }
