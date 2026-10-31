@@ -192,6 +192,8 @@ export function Chat() {
   const send = useAction(api.router.webCommand);
   const autorun = useAction(api.router.autorun);
   const reset = useMutation(api.admin.reset);
+  const refreshProfile = useAction(api.profile.refresh);
+  const [scraping, setScraping] = useState(false);
   const mine = useQuery(api.tasks.bySession, { session });
   const end = useRef<HTMLDivElement>(null);
   const adminKey = new URLSearchParams(location.search).get("admin");
@@ -241,6 +243,23 @@ export function Chat() {
         <button onClick={() => autorun({})} className="flex-1 rounded bg-slate-700 py-1 text-xs hover:bg-slate-600">
           ▶ Auto-run 20 tasks
         </button>
+        {adminKey && (
+          <button
+            disabled={scraping}
+            onClick={async () => {
+              setScraping(true);
+              try {
+                const r = await refreshProfile({ adminKey });
+                if (r.source !== "firecrawl") alert(`Firecrawl failed, kept fallback profile: ${"error" in r ? r.error : ""}`);
+              } finally {
+                setScraping(false);
+              }
+            }}
+            className="rounded bg-orange-700 px-3 py-1 text-xs hover:bg-orange-600 disabled:opacity-50"
+          >
+            {scraping ? "Scraping…" : "🔥 Firecrawl spec"}
+          </button>
+        )}
         {adminKey && (
           <button
             onClick={() => confirm("Reset everything?") && reset({ adminKey })}

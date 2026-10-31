@@ -10,4 +10,4 @@ export const FALLBACK_PROFILE: Profile = {
   forbidden_zones: ["Human Zone"],
 };
 
-export const DEFAULT_SPEC_URL = "https://www.mobile-industrial-robots.com/robots/mir250";
+export const DEFAULT_SPEC_URL = "https://mobile-industrial-robots.com/products/robots/mir250/specifications";
