@@ -5,7 +5,7 @@ import { action, internalAction, type ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MODELS, costOf, BASELINE_SAMPLES, type ModelTier } from "./lib/pricing";
 import { PlanSchema, fromTemplate, normalize, parseFree, toTemplate, validatePlan, type Plan } from "./lib/plan";
-import { LOCATIONS, positionAt, type PathPt } from "./lib/warehouse";
+import { HOME_BAYS, LOCATIONS, positionAt, type PathPt } from "./lib/warehouse";
 import type { Profile } from "./lib/profile";
 
 type Source = "imessage" | "web";
@@ -95,6 +95,7 @@ function addSpend(s: Spend, tier: ModelTier, u: Anthropic.Usage) {
 const money = (n: number) => `$${n.toFixed(4)}`;
 
 function nearestPlace(x: number, y: number) {
+  if (HOME_BAYS.some((h) => Math.hypot(h.x - x, h.y - y) < 0.5)) return "parked at home bay";
   let best = LOCATIONS[0];
   let bd = Infinity;
   for (const l of LOCATIONS) {
@@ -127,6 +128,7 @@ export async function handleCommandImpl(ctx: ActionCtx, source: Source, sender: 
       isBaseline: a.isBaseline ?? false,
       plan: a.plan,
       summary: a.summary,
+      createdAt: t0,
     });
 
   try {

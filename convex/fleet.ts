@@ -164,6 +164,7 @@ export const logTask = internalMutation({
     isBaseline: v.boolean(),
     plan: v.optional(v.any()),
     summary: v.optional(v.string()),
+    createdAt: v.number(),
   },
   handler: async (ctx, a) => {
     return await ctx.db.insert("tasks", {
@@ -171,7 +172,6 @@ export const logTask = internalMutation({
       senderMasked: maskSender(a.source, a.sender),
       robotNums: [],
       pendingJobs: 0,
-      createdAt: Date.now(),
     });
   },
 });

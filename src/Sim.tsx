@@ -148,7 +148,7 @@ function Warehouse() {
 
 export function Sim({ robots, stepMs }: { robots: RobotView[]; stepMs: number }) {
   return (
-    <Canvas shadows camera={{ position: [GRID_W / 2, 17, GRID_H + 9], fov: 45 }} dpr={[1, 2]}>
+    <Canvas shadows camera={{ position: [GRID_W / 2 - 0.5, 21, GRID_H + 7], fov: 50 }} dpr={[1, 2]}>
       <color attach="background" args={["#07090f"]} />
       <ambientLight intensity={0.55} />
       <directionalLight position={[10, 20, 8]} intensity={1.1} castShadow />
