@@ -1,10 +1,15 @@
 import { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, OrbitControls, RoundedBox } from "@react-three/drei";
-import type { Group, MeshStandardMaterial, Mesh } from "three";
+import type { Group, MeshBasicMaterial, MeshStandardMaterial, Mesh } from "three";
 import { Color } from "three";
 import { GRID_H, GRID_W, HOME_BAYS, HUMAN_ZONE, LOCATIONS, RACKS, positionAt, type PathPt } from "../convex/lib/warehouse";
 import { serverNow } from "./clock";
+import { GhostSheet, GhostTrail } from "./GhostSheet";
+import { booStyle } from "./ghostFx";
+
+// Halloween: these robots wear a ghost sheet (visual only).
+const GHOST_ROBOTS = new Set([1, 2]);
 
 export type RobotView = {
   num: number;
@@ -38,7 +43,12 @@ function Robot({ r, stepMs }: { r: RobotView; stepMs: number }) {
   const body = useRef<Mesh>(null);
   const load = useRef<Mesh>(null);
   const label = useRef<HTMLDivElement>(null);
+  const halo = useRef<Mesh>(null);
+  const boo = useRef<HTMLDivElement>(null);
+  const wasBusy = useRef<boolean | null>(null);
+  const booAt = useRef(-Infinity);
   const heading = useRef(0);
+  const ghost = GHOST_ROBOTS.has(r.num);
   useFrame(() => {
     const step = serverNow() / stepMs;
     const p = positionAt(r.path as PathPt[], step);
@@ -58,29 +68,63 @@ function Robot({ r, stepMs }: { r: RobotView; stepMs: number }) {
       mat.emissive.copy(c);
       mat.emissiveIntensity = 0.55 + 0.25 * Math.sin(performance.now() / 300);
     }
+    const haloMat = halo.current?.material as MeshBasicMaterial | undefined;
+    if (haloMat) {
+      haloMat.color.copy(c);
+      haloMat.opacity = 0.75 + 0.2 * Math.sin(performance.now() / 300);
+    }
     if (load.current) load.current.visible = s.carrying;
+    if (ghost) {
+      // "Boo!" when a ghost robot starts a job (not on page load if it is already moving)
+      const now = performance.now();
+      if (wasBusy.current === false && s.busy) booAt.current = now;
+      wasBusy.current = s.busy;
+      if (boo.current) {
+        const b = booStyle(now - booAt.current);
+        boo.current.style.opacity = String(b.alpha);
+        boo.current.style.transform = `translateY(-26px) scale(${b.scale})`;
+      }
+    }
     if (label.current) {
       label.current.style.color = s.charging ? "#facc15" : s.busy ? "#93c5fd" : "#86efac";
       label.current.textContent = `R${r.num} · ${Math.round(r.battery)}%${s.charging ? " ⚡" : ""}`;
     }
   });
   return (
-    <group ref={g}>
-      <RoundedBox ref={body} args={[0.8, 0.3, 0.8]} radius={0.08} position={[0, 0.2, 0]} castShadow>
-        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.6} roughness={0.4} />
-      </RoundedBox>
-      <mesh position={[0, 0.37, 0.28]}>
-        <boxGeometry args={[0.5, 0.04, 0.12]} />
-        <meshStandardMaterial color="#0f172a" />
-      </mesh>
-      <mesh ref={load} position={[0, 0.58, 0]} castShadow visible={false}>
-        <boxGeometry args={[0.62, 0.4, 0.62]} />
-        <meshStandardMaterial color="#b45309" roughness={0.9} />
-      </mesh>
-      <Html position={[0, 1.15, 0]} center zIndexRange={[10, 0]}>
-        <div ref={label} className="robot-label">R{r.num}</div>
-      </Html>
-    </group>
+    <>
+      {ghost && <GhostTrail target={g} seed={r.num * 1.7} />}
+      <group ref={g}>
+        <RoundedBox ref={body} args={[0.8, 0.3, 0.8]} radius={0.08} position={[0, 0.2, 0]} castShadow>
+          <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.6} roughness={0.4} />
+        </RoundedBox>
+        <mesh position={[0, 0.37, 0.28]}>
+          <boxGeometry args={[0.5, 0.04, 0.12]} />
+          <meshStandardMaterial color="#0f172a" />
+        </mesh>
+        {ghost && (
+          <>
+            <GhostSheet seed={r.num * 1.7} battery={r.battery} />
+            {/* status colour stays readable under the sheet */}
+            <mesh ref={halo} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+              <ringGeometry args={[0.6, 0.72, 48]} />
+              <meshBasicMaterial color="#22c55e" transparent opacity={0.85} depthWrite={false} />
+            </mesh>
+          </>
+        )}
+        <mesh ref={load} position={[0, ghost ? 0.66 : 0.58, 0]} castShadow visible={false}>
+          <boxGeometry args={[0.62, 0.4, 0.62]} />
+          <meshStandardMaterial color="#b45309" roughness={0.9} />
+        </mesh>
+        <Html position={[0, 1.15, 0]} center zIndexRange={[10, 0]}>
+          <div ref={label} className="robot-label">R{r.num}</div>
+        </Html>
+        {ghost && (
+          <Html position={[0, 1.75, 0]} center zIndexRange={[9, 0]}>
+            <div ref={boo} className="boo-bubble" style={{ opacity: 0 }}>Boo! 📦</div>
+          </Html>
+        )}
+      </group>
+    </>
   );
 }
 
