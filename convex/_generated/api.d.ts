@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib_llm from "../lib/llm.js";
 import type * as lib_prompts from "../lib/prompts.js";
@@ -26,6 +27,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  crons: typeof crons;
   http: typeof http;
   "lib/llm": typeof lib_llm;
   "lib/prompts": typeof lib_prompts;

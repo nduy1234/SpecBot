@@ -201,3 +201,8 @@ export const dedupe = internalMutation({
     return true;
   },
 });
+
+export const queuedCount = internalQuery({
+  args: {},
+  handler: async (ctx) => (await ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "queued")).collect()).length,
+});

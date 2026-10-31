@@ -117,19 +117,29 @@ export const robotFree = internalMutation({
     const r = await ctx.db.get(robotId);
     if (!r || r.busyUntil > Date.now() + 50) return; // a newer path superseded this timer
     await ctx.db.patch(robotId, { taskId: undefined });
-    // Pull the oldest queued task, if any.
-    const queued = await ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "queued")).order("asc").first();
-    if (queued) {
-      const res = await dispatchCore(ctx, queued);
-      if (res.status === "running") await ctx.scheduler.runAfter(0, internal.photon.notifyStarted, { taskId: queued._id });
-      if (res.status === "error") {
-        await ctx.db.patch(queued._id, { status: "blocked", reasons: [...queued.reasons, res.reason] });
-      }
-      return;
-    }
     if (r.battery < AUTO_CHARGE_BELOW) await autoCharge(ctx, robotId);
+    await drainQueue(ctx);
   },
 });
+
+/** Try every queued task oldest-first (no head-of-line blocking) until no idle robot can take one. */
+async function drainQueue(ctx: MutationCtx) {
+  const queued = await ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", "queued")).order("asc").take(50);
+  for (const t of queued) {
+    const now = Date.now();
+    const idle = await ctx.db.query("robots").withIndex("by_num").collect();
+    if (!idle.some((x) => x.busyUntil <= now)) return;
+    const res = await dispatchCore(ctx, t);
+    if (res.status === "running") await ctx.scheduler.runAfter(0, internal.photon.notifyStarted, { taskId: t._id });
+    if (res.status === "error") await ctx.db.patch(t._id, { status: "blocked", tier: "BLOCKED", reasons: [...t.reasons, res.reason] });
+  }
+  // Idle robots with low battery top up while nothing else needs them.
+  for (const r of await ctx.db.query("robots").withIndex("by_num").collect())
+    if (r.busyUntil <= Date.now() && r.battery < AUTO_CHARGE_BELOW) await autoCharge(ctx, r._id);
+}
+
+/** Safety sweep (cron): makes sure an idle fleet never sits next to a non-empty queue. */
+export const sweep = internalMutation({ args: {}, handler: async (ctx) => drainQueue(ctx) });
 
 async function autoCharge(ctx: MutationCtx, robotId: Id<"robots">) {
   const robots = await ctx.db.query("robots").withIndex("by_num").collect();

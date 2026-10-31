@@ -63,9 +63,13 @@ const DEMO = [
 
 export const autorun = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ started: boolean; queued: number }> => {
+    // Avoid flooding the queue when Auto-run is pressed repeatedly.
+    const queued: number = await ctx.runQuery(internal.tasks.queuedCount, {});
+    if (queued > 4) return { started: false, queued };
     for (let i = 0; i < DEMO.length; i++)
       await ctx.scheduler.runAfter(i * 2500, internal.router.handleCommand, { source: "autorun", senderKey: "autorun", text: DEMO[i] });
+    return { started: true, queued };
   },
 });
 
