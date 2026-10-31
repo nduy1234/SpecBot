@@ -14,7 +14,7 @@ const TIER_STYLE: Record<string, string> = {
 };
 const usd = (x: number | null | undefined, d = 4) => (x == null ? "—" : `$${x.toFixed(d)}`);
 
-const FIRST_COMMAND = "move pallet from Dock A to Rack 3";
+const FIRST_COMMAND = "move pumpkins from Dock A to Rack 3";
 const smsLink = (n: string) => `sms:${n}&body=${encodeURIComponent(FIRST_COMMAND)}`;
 
 function useJoin() {
@@ -74,8 +74,8 @@ function JoinForm({ j, big }: { j: ReturnType<typeof useJoin>; big?: boolean }) 
 export function JoinPage() {
   const j = useJoin();
   return (
-    <div className="flex min-h-screen flex-col justify-center gap-4 bg-gradient-to-b from-purple-800 to-blue-900 p-5 text-white">
-      <div className="text-xs uppercase tracking-widest text-purple-200">SpecBot Text</div>
+    <div className="flex min-h-screen flex-col justify-center gap-4 bg-gradient-to-b from-orange-600 via-purple-800 to-purple-950 p-5 text-white">
+      <div className="text-xs uppercase tracking-widest text-orange-200">🎃 SpecBot Halloween Factory</div>
       <h1 className="text-3xl font-black leading-tight">Text a robot fleet over iMessage</h1>
       {j.state.number ? (
         <>
@@ -105,13 +105,13 @@ export function Banner() {
   const j = useJoin();
   const joinUrl = `${location.origin}/?join`;
   return (
-    <div className="flex shrink-0 items-center gap-4 rounded-xl bg-gradient-to-r from-purple-700 to-blue-700 p-3">
+    <div className="flex shrink-0 items-center gap-4 rounded-xl bg-gradient-to-r from-orange-600 via-purple-700 to-purple-900 p-3">
       <a href={joinUrl} className="shrink-0 rounded bg-white p-1 text-center" title="Scan with your phone">
         <QRCodeSVG value={joinUrl} size={92} />
         <div className="text-[9px] font-bold text-slate-900">SCAN TO TEXT</div>
       </a>
       <div className="min-w-0 flex-1">
-        <div className="text-xs uppercase tracking-widest text-purple-200">SpecBot Text · Text a robot fleet. Pay 90% less for its brain.</div>
+        <div className="text-xs uppercase tracking-widest text-orange-200">🎃 SpecBot Halloween Factory · Text a robot fleet. Pay 90% less for its brain.</div>
         <div className="text-2xl font-black leading-tight">📱 Scan → register → text the fleet over iMessage</div>
         {j.state.number ? (
           <div className="text-sm text-purple-100">

@@ -16,8 +16,8 @@ import { validatePlan } from "../shared/validator";
 
 const HELP = `🤖 SpecBot here: I command a 4-robot warehouse fleet.
 Try:
-• move pallet from Dock A to Rack 3
-• bring 40 kg boxes from Rack 5 to Dock C
+• move pumpkins from Dock A to Rack 3
+• bring 40 kg candy from Rack 5 to Dock C
 • charge robot 2
 • where is robot 1 / status / dashboard
 Every reply shows which brain planned it and what it cost vs an all-Opus baseline.`;
@@ -39,26 +39,26 @@ export const webCommand = action({
 });
 
 const DEMO = [
-  "move pallet from Dock A to Rack 3",
-  "move pallet from Dock B to Rack 1",
+  "move pumpkins from Dock A to Rack 3",
+  "move candy from Dock B to Rack 1",
   "where is robot 2",
-  "move boxes from Rack 4 to Dock C",
-  "move pallet from Dock C to Rack 6",
+  "move costumes from Rack 4 to Dock C",
+  "move pumpkins from Dock C to Rack 6",
   "send robot 3 to Dock A",
-  "move pallet from Rack 2 to Dock B",
-  "bring 300 kg of steel from Dock A to Rack 5",
-  "move tires from Dock B to Rack 2",
+  "move candy corn from Rack 2 to Dock B",
+  "bring 300 kg of giant pumpkins from Dock A to Rack 5",
+  "move witch hats from Dock B to Rack 2",
   "status",
-  "move pallet from Dock A to Rack 4",
-  "deliver crates from Rack 6 to Dock A",
+  "move pumpkins from Dock A to Rack 4",
+  "deliver candy crates from Rack 6 to Dock A",
   "charge robot 4",
-  "move pallet from Dock C to Rack 1",
+  "move skeletons from Dock C to Rack 1",
   "drive robot 1 through the human zone to Dock C",
-  "move pallet from Dock B to Rack 5",
-  "move boxes from Rack 3 to Dock B",
-  "move pallet from Dock A to Rack 2",
-  "use two robots to move 150 kg of parts from Dock C to Rack 6",
-  "move pallet from Dock B to Rack 3",
+  "move pumpkins from Dock B to Rack 5",
+  "move costumes from Rack 3 to Dock B",
+  "move candy from Dock A to Rack 2",
+  "use two robots to move 150 kg of pumpkins from Dock C to Rack 6",
+  "move jack-o-lanterns from Dock B to Rack 3",
 ];
 
 export const autorun = action({

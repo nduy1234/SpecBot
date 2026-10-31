@@ -57,7 +57,7 @@ function sample(r: RobotView, now: number) {
 function Robot({ r, offset }: { r: RobotView; offset: () => number }) {
   const g = useRef<Group>(null);
   const body = useRef<Mesh>(null);
-  const load = useRef<Mesh>(null);
+  const load = useRef<Group>(null);
   useFrame(() => {
     const s = sample(r, Date.now() + offset());
     if (g.current) g.current.position.set(wx(s.x), 0, wz(s.y));
@@ -73,10 +73,16 @@ function Robot({ r, offset }: { r: RobotView; offset: () => number }) {
         <boxGeometry args={[0.75, 0.3, 0.75]} />
         <meshStandardMaterial emissiveIntensity={0.6} />
       </mesh>
-      <mesh ref={load} position={[0, 0.5, 0]} visible={false}>
-        <boxGeometry args={[0.55, 0.3, 0.55]} />
-        <meshStandardMaterial color="#b45309" />
-      </mesh>
+      <group ref={load} position={[0, 0.58, 0]} visible={false}>
+        <mesh scale={[1, 0.78, 1]} castShadow>
+          <sphereGeometry args={[0.3, 20, 14]} />
+          <meshStandardMaterial color="#f97316" emissive="#c2410c" emissiveIntensity={0.35} />
+        </mesh>
+        <mesh position={[0, 0.27, 0]}>
+          <cylinderGeometry args={[0.04, 0.05, 0.14, 8]} />
+          <meshStandardMaterial color="#166534" />
+        </mesh>
+      </group>
       <Label text={`R${r.num}`} position={[0, 1.0, 0]} scale={0.45} />
     </group>
   );
@@ -94,28 +100,49 @@ function Tile({ x, y, color, h = 0.02, label, opacity = 1 }: { x: number; y: num
   );
 }
 
+function JackOLantern({ x, y }: { x: number; y: number }) {
+  const light = useRef<{ intensity: number } | null>(null);
+  useFrame(({ clock }) => {
+    if (light.current) light.current.intensity = 1.6 + Math.sin(clock.elapsedTime * 7 + x) * 0.4 + Math.sin(clock.elapsedTime * 13 + y) * 0.25;
+  });
+  return (
+    <group position={[wx(x), 0.32, wz(y)]}>
+      <mesh scale={[1, 0.8, 1]}>
+        <sphereGeometry args={[0.4, 20, 14]} />
+        <meshStandardMaterial color="#ea580c" emissive="#f59e0b" emissiveIntensity={0.8} />
+      </mesh>
+      <mesh position={[0, 0.36, 0]}>
+        <cylinderGeometry args={[0.05, 0.06, 0.18, 8]} />
+        <meshStandardMaterial color="#14532d" />
+      </mesh>
+      <pointLight ref={light as never} color="#fb923c" distance={6} intensity={1.6} position={[0, 0.6, 0]} />
+    </group>
+  );
+}
+
 export function Warehouse({ robots, offset }: { robots: RobotView[]; offset: () => number }) {
   const zone = [];
   for (let x = HUMAN_ZONE.x0; x <= HUMAN_ZONE.x1; x++) for (let y = HUMAN_ZONE.y0; y <= HUMAN_ZONE.y1; y++) zone.push({ x, y });
   return (
     <Canvas shadows camera={{ position: [0, 15, 11], fov: 45 }}>
-      <color attach="background" args={["#0b1020"]} />
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[6, 12, 6]} intensity={1.2} castShadow />
+      <color attach="background" args={["#12051f"]} />
+      <fog attach="fog" args={["#12051f", 22, 42]} />
+      <ambientLight intensity={0.45} color="#c4b5fd" />
+      <directionalLight position={[6, 12, 6]} intensity={0.9} color="#e9d5ff" castShadow />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[W, H]} />
-        <meshStandardMaterial color="#1e293b" />
+        <meshStandardMaterial color="#1e1030" />
       </mesh>
-      <gridHelper args={[W, W, "#334155", "#334155"]} position={[0, 0.005, 0]} scale={[1, 1, H / W]} />
+      <gridHelper args={[W, W, "#4c1d95", "#3b0764"]} position={[0, 0.005, 0]} scale={[1, 1, H / W]} />
       {DOCKS.map((d) => (
-        <Tile key={d.name} x={d.access.x} y={d.access.y} color="#0ea5e9" label={d.name} />
+        <Tile key={d.name} x={d.access.x} y={d.access.y} color="#f97316" label={`🎃 ${d.name}`} />
       ))}
       {RACKS.map((r) => (
         <group key={r.name}>
           {r.body.map((c, i) => (
-            <Tile key={i} x={c.x} y={c.y} color="#78716c" h={1.2} label={i === 0 ? r.name : undefined} />
+            <Tile key={i} x={c.x} y={c.y} color="#581c87" h={1.2} label={i === 0 ? r.name : undefined} />
           ))}
-          <Tile x={r.access.x} y={r.access.y} color="#475569" />
+          <Tile x={r.access.x} y={r.access.y} color="#6b21a8" />
         </group>
       ))}
       {zone.map((c, i) => (
@@ -126,6 +153,9 @@ export function Warehouse({ robots, offset }: { robots: RobotView[]; offset: () 
       ))}
       {HOMES.map((c, i) => (
         <Tile key={i} x={c.x} y={c.y} color="#14532d" />
+      ))}
+      {[[0, 0], [19, 0], [0, 11], [8, 6], [12, 10]].map(([x, y]) => (
+        <JackOLantern key={`${x},${y}`} x={x} y={y} />
       ))}
       {robots.map((r) => (
         <Robot key={r.num} r={r} offset={offset} />
